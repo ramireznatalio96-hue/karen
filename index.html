@@ -6,17 +6,13 @@
 <title>Karen ❤️</title>
 
 <!-- Preload de la imagen de fondo -->
-photo.jpg
-
-<style>
-  :root{
-    --bg-url: url('photo.jpg');
+<link rel="preload" as="image" href="url: url('photo.jpg');
     --txt-color: #ffffff;
     --glow: #ff2a4f;
     --glow-strong: #ff0033;
     --shadow: rgba(0,0,0,0.35);
 
-    /* Tamaños fluidos */
+    /* Tamaños fluidos y zonas seguras */
     --rose-size: clamp(96px, 22vw, 220px);
     --title-size: clamp(22px, 5.2vw, 44px);
     --bottom-size: clamp(16px, 4.2vw, 28px);
@@ -29,20 +25,22 @@ photo.jpg
     margin: 0;
     color: var(--txt-color);
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    background: #000;
-    overflow: hidden;
+    background: #000;     /* Fallback mientras carga la foto */
+    overflow: hidden;     /* Evita scroll accidental durante animaciones */
   }
 
+  /* Escenario a pantalla completa con perspectiva 3D */
   .stage {
     position: relative;
     width: 100%;
-    height: 100vh;           /* Fallback universal */
-    height: 100dvh;          /* Usado si el navegador lo soporta */
+    height: 100vh;        /* Fallback universal */
+    height: 100dvh;       /* Usado si el navegador lo soporta */
     perspective: 1000px;
     overflow: hidden;
-    isolation: isolate;
+    isolation: isolate;   /* Aísla capas para mejor compositing */
   }
 
+  /* Fondo con overlay para legibilidad */
   .bg {
     position: absolute;
     inset: 0;
@@ -53,9 +51,10 @@ photo.jpg
     will-change: transform;
   }
 
+  /* Texto superior */
   #title {
     position: absolute;
-    top: var(--safe-gap);
+    top: calc(var(--safe-gap) + env(safe-area-inset-top, 0px));
     left: 50%;
     transform: translateX(-50%);
     width: min(92%, 1000px);
@@ -66,9 +65,10 @@ photo.jpg
     z-index: 50;
   }
 
+  /* Texto inferior */
   #bottomText {
     position: absolute;
-    bottom: var(--safe-gap);
+    bottom: calc(var(--safe-gap) + env(safe-area-inset-bottom, 0px));
     left: 50%;
     transform: translateX(-50%);
     width: min(92%, 900px);
@@ -79,18 +79,18 @@ photo.jpg
     z-index: 50;
   }
 
-  /* Centrado perfecto de la rosa con flex */
+  /* Wrapper que garantiza el centrado de la rosa (evita conflictos de transform) */
   #roseWrapper {
     position: absolute;
     inset: 0;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 40;           /* encima de pétalos, debajo de textos */
+    align-items: center;     /* centro vertical */
+    justify-content: center; /* centro horizontal */
+    z-index: 40;             /* encima de pétalos, debajo de textos */
     pointer-events: none;
   }
 
-  /* La rosa: NO uses position/top/left aquí */
+  /* Rosa animada (NO usa top/left; solo animación) */
   #rose {
     font-size: var(--rose-size);
     transform-style: preserve-3d;
@@ -103,7 +103,7 @@ photo.jpg
     will-change: transform;
   }
 
-  /* Animación: solo traslación vertical y rotación */
+  /* Animación de la rosa: traslación vertical + rotación Y (sin centrar aquí) */
   @keyframes floatRotateY {
     0%   { transform: translateY(0) rotateY(0deg); }
     25%  { transform: translateY(-14px) rotateY(90deg); }
@@ -112,39 +112,77 @@ photo.jpg
     100% { transform: translateY(0) rotateY(360deg); }
   }
 
-  /* Pétalos (detrás de la rosa) */
-  .petal {
+  /* ========= PÉTALOS con animaciones separadas por capas ========= */
+
+  /* TRACK: maneja la caída vertical y el fade */
+  .petal-track {
     position: absolute;
+    top: -12vh;                 /* comienza encima del viewport */
+    opacity: 0;
+    z-index: 30;                /* detrás de la rosa */
+    will-change: transform, opacity;
+    animation: fall var(--fall-dur, 6s) linear var(--fall-delay, 0s) infinite;
+  }
+
+  /* SWAY: maneja la deriva horizontal (otra capa, otro transform) */
+  .petal-sway {
+    will-change: transform;
+    animation: sway var(--sway-dur, 3.6s) ease-in-out var(--fall-delay, 0s) infinite;
+  }
+
+  /* Pétalo visual (estilo y ligera rotación) */
+  .petal {
     width: 14px;
     height: 18px;
     background: radial-gradient(circle at 40% 40%, #ff6a85, #c0163d 65%, #800020 95%);
     border-radius: 50% 50% 60% 60%;
     filter: drop-shadow(0 2px 3px rgba(0,0,0,0.45));
-    opacity: 0;
-    z-index: 30;
-    animation:
-      fall var(--fall-dur, 6s) linear var(--fall-delay, 0s) infinite,
-      sway var(--sway-dur, 3.6s) ease-in-out var(--fall-delay, 0s) infinite;
-    will-change: transform, opacity;
+    transform: rotate(var(--rot, 0deg));
   }
 
-  /* IMPORTANTE: usar vh para máxima compatibilidad */
+  /* Caída vertical (usar vh para compatibilidad amplia) */
   @keyframes fall {
-    0%   { transform: translate3d(var(--x, 0), -12vh, 0) rotate(var(--rot, 0deg)); opacity: 0; }
-    10%  { opacity: 1; }
-    100% { transform: translate3d(var(--x, 0), 112vh, 0) rotate(calc(var(--rot, 0deg) + 180deg)); opacity: 0; }
+    0%   { transform: translateY(0);     opacity: 0; }
+    10%  {                               opacity: 1; }
+    100% { transform: translateY(112vh); opacity: 0; }
   }
 
+  /* Deriva lateral */
   @keyframes sway {
     0%, 100% { transform: translateX(-12px); }
     50%      { transform: translateX(12px); }
   }
 
-  /* ⚠️ Si quieres respetar accesibilidad, descomenta:
+  /* Opcional: Ajuste en landscape (puedes comentar si no lo quieres) */
+  @media (orientation: landscape) {
+    :root { --rose-size: clamp(96px, 18vw, 220px); }
+  }
+
+  /* Accesibilidad: si quieres respetar "Reducir movimiento", descomenta:
   @media (prefers-reduced-motion: reduce) {
-    #rose, .petal { animation: none !important; }
+    #rose, .petal-track, .petal-sway { animation: none !important; }
   }
   */
+
+  /* === Botón de Música === */
+  .audio-btn {
+    position: absolute;
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    z-index: 60;
+    background: rgba(0,0,0,0.45);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.35);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-size: 14px;
+    line-height: 1;
+    backdrop-filter: blur(6px);
+    cursor: pointer;
+    user-select: none;
+    touch-action: manipulation;
+  }
+  .audio-btn:active { transform: scale(0.98); }
 </style>
 </head>
 
@@ -154,46 +192,98 @@ photo.jpg
 
     <h1 id="title">Karen, te quiero mucho</h1>
 
+    <!-- Rosa centrada por wrapper flex -->
     <div id="roseWrapper" aria-hidden="true">
       <div id="rose">🌹</div>
     </div>
 
     <div id="bottomText">Te quiero ver cada minuto</div>
+
+    <!-- Botón de música -->
+    <button id="audioToggle" class="audio-btn" aria-pressed="false" aria-label="Reproducir música">🎵 Música</button>
   </div>
 
+<!-- ====== SCRIPTS ====== -->
 <script>
-  // ========= Parámetros =========
+  // ========= Parámetros de pétalos =========
   const isMobile = window.matchMedia('(max-width: 768px)').matches;
   const PETAL_COUNT = isMobile ? 28 : 52;
 
   const DUR_MIN = 5.0, DUR_MAX = 8.0;
   const SWAY_MIN = 3.0, SWAY_MAX = 5.0;
   const ROT_START = [-25, 25];
-  const X_DRIFT = [-20, 20];
 
   const stage = document.querySelector('.stage');
 
-  // Generar pétalos dentro de .stage (respeta las capas con z-index)
+  // Generar estructura anidada: track (caída) -> sway (deriva) -> petal (visual)
   for (let i = 0; i < PETAL_COUNT; i++) {
-    const p = document.createElement('div');
-    p.className = 'petal';
+    const track = document.createElement('div');
+    track.className = 'petal-track';
+    track.style.left = (Math.random() * 100).toFixed(2) + 'vw';
+    track.style.setProperty('--fall-delay', (Math.random() * 4).toFixed(2) + 's');
+    track.style.setProperty('--fall-dur', (DUR_MIN + Math.random() * (DUR_MAX - DUR_MIN)).toFixed(2) + 's');
 
-    // Ancho relativo a viewport; si quieres ultra compatible, usa % sobre stage
-    p.style.left = (Math.random() * 100).toFixed(2) + 'vw';
+    const sway = document.createElement('div');
+    sway.className = 'petal-sway';
+    sway.style.setProperty('--sway-dur', (SWAY_MIN + Math.random() * (SWAY_MAX - SWAY_MIN)).toFixed(2) + 's');
 
-    // Desfase de inicio
-    p.style.setProperty('--fall-delay', (Math.random() * 4).toFixed(2) + 's');
+    const petal = document.createElement('div');
+    petal.className = 'petal';
+    petal.style.setProperty('--rot', (ROT_START[0] + Math.random() * (ROT_START[1] - ROT_START[0])).toFixed(1) + 'deg');
 
-    // Duraciones
-    p.style.setProperty('--fall-dur', (DUR_MIN + Math.random() * (DUR_MAX - DUR_MIN)).toFixed(2) + 's');
-    p.style.setProperty('--sway-dur', (SWAY_MIN + Math.random() * (SWAY_MAX - SWAY_MIN)).toFixed(2) + 's');
-
-    // Rotación base y deriva extra en X
-    p.style.setProperty('--rot', (ROT_START[0] + Math.random() * (ROT_START[1] - ROT_START[0])).toFixed(1) + 'deg');
-    p.style.setProperty('--x', (X_DRIFT[0] + Math.random() * (X_DRIFT[1] - X_DRIFT[0])).toFixed(1) + 'px');
-
-    stage.appendChild(p);
+    sway.appendChild(petal);
+    track.appendChild(sway);
+    stage.appendChild(track);
   }
+
+  // ========= Música (opcional: coloca music.mp3 junto a este archivo) =========
+  const audio = new Audio('music.mp3'); // Si no usarás música, puedes comentar estas líneas
+  audio.loop = true;
+
+  const btn = document.getElementById('audioToggle');
+
+  // Desbloquear audio en iOS/Safari tras primer gesto del usuario
+  const enableAudioContext = () => {
+    audio.muted = true;
+    audio.play().then(() => {
+      audio.pause();
+      audio.currentTime = 0;
+      audio.muted = false;
+      window.removeEventListener('pointerdown', enableAudioContext, { passive: true });
+      window.removeEventListener('touchstart', enableAudioContext, { passive: true });
+      window.removeEventListener('click', enableAudioContext, { passive: true });
+    }).catch(() => {/* ignorar */});
+  };
+
+  window.addEventListener('pointerdown', enableAudioContext, { passive: true });
+  window.addEventListener('touchstart', enableAudioContext, { passive: true });
+  window.addEventListener('click', enableAudioContext, { passive: true });
+
+  // Control del botón
+  btn.addEventListener('click', async () => {
+    if (audio.paused) {
+      try {
+        await audio.play();
+        btn.textContent = '⏸️ Pausar';
+        btn.setAttribute('aria-pressed', 'true');
+        btn.setAttribute('aria-label', 'Pausar música');
+      } catch (e) {
+        console.warn('No se pudo reproducir audio:', e);
+        btn.textContent = '⚠️ Tocar de nuevo';
+      }
+    } else {
+      audio.pause();
+      btn.textContent = '🎵 Música';
+      btn.setAttribute('aria-pressed', 'false');
+      btn.setAttribute('aria-label', 'Reproducir música');
+    }
+  });
+
+  audio.addEventListener('ended', () => {
+    btn.textContent = '🎵 Música';
+    btn.setAttribute('aria-pressed', 'false');
+    btn.setAttribute('aria-label', 'Reproducir música');
+  });
 </script>
 </body>
 </html>
