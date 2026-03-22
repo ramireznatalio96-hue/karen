@@ -6,7 +6,11 @@
 <title>Karen ❤️</title>
 
 <!-- Preload de la imagen de fondo -->
-<link rel="preload" as="image" href="url: url('photo.jpg');
+photo.jpg
+
+<style>
+  :root{
+    --bg-url: url('photo.jpg');
     --txt-color: #ffffff;
     --glow: #ff2a4f;
     --glow-strong: #ff0033;
@@ -163,26 +167,6 @@
     #rose, .petal-track, .petal-sway { animation: none !important; }
   }
   */
-
-  /* === Botón de Música === */
-  .audio-btn {
-    position: absolute;
-    right: 16px;
-    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-    z-index: 60;
-    background: rgba(0,0,0,0.45);
-    color: #fff;
-    border: 1px solid rgba(255,255,255,0.35);
-    border-radius: 999px;
-    padding: 10px 14px;
-    font-size: 14px;
-    line-height: 1;
-    backdrop-filter: blur(6px);
-    cursor: pointer;
-    user-select: none;
-    touch-action: manipulation;
-  }
-  .audio-btn:active { transform: scale(0.98); }
 </style>
 </head>
 
@@ -198,9 +182,6 @@
     </div>
 
     <div id="bottomText">Te quiero ver cada minuto</div>
-
-    <!-- Botón de música -->
-    <button id="audioToggle" class="audio-btn" aria-pressed="false" aria-label="Reproducir música">🎵 Música</button>
   </div>
 
 <!-- ====== SCRIPTS ====== -->
@@ -236,53 +217,39 @@
     stage.appendChild(track);
   }
 
-  // ========= Música (opcional: coloca music.mp3 junto a este archivo) =========
-  const audio = new Audio('music.mp3'); // Si no usarás música, puedes comentar estas líneas
-  audio.loop = true;
+  // ========= Música: sin botón, reproducir UNA sola vez =========
+  // Coloca 'music.mp3' junto a este HTML (o cambia la ruta).
+  const audio = new Audio('music.mp3');
+  audio.loop = false;          // Reproducir solo una vez
+  audio.preload = 'auto';
 
-  const btn = document.getElementById('audioToggle');
-
-  // Desbloquear audio en iOS/Safari tras primer gesto del usuario
-  const enableAudioContext = () => {
-    audio.muted = true;
-    audio.play().then(() => {
-      audio.pause();
-      audio.currentTime = 0;
-      audio.muted = false;
-      window.removeEventListener('pointerdown', enableAudioContext, { passive: true });
-      window.removeEventListener('touchstart', enableAudioContext, { passive: true });
-      window.removeEventListener('click', enableAudioContext, { passive: true });
-    }).catch(() => {/* ignorar */});
+  // Intento de autoplay al cargar
+  const tryAutoplay = () => {
+    audio.play().catch(() => {
+      // Si el navegador bloquea autoplay con sonido:
+      // Reproducimos en el primer gesto del usuario (tap/click)
+      const onFirstUserGesture = () => {
+        audio.play().finally(() => {
+          window.removeEventListener('pointerdown', onFirstUserGesture, { passive: true });
+          window.removeEventListener('touchstart', onFirstUserGesture, { passive: true });
+          window.removeEventListener('click', onFirstUserGesture, { passive: true });
+        });
+      };
+      window.addEventListener('pointerdown', onFirstUserGesture, { passive: true });
+      window.addEventListener('touchstart', onFirstUserGesture, { passive: true });
+      window.addEventListener('click', onFirstUserGesture, { passive: true });
+    });
   };
 
-  window.addEventListener('pointerdown', enableAudioContext, { passive: true });
-  window.addEventListener('touchstart', enableAudioContext, { passive: true });
-  window.addEventListener('click', enableAudioContext, { passive: true });
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    tryAutoplay();
+  } else {
+    window.addEventListener('DOMContentLoaded', tryAutoplay);
+  }
 
-  // Control del botón
-  btn.addEventListener('click', async () => {
-    if (audio.paused) {
-      try {
-        await audio.play();
-        btn.textContent = '⏸️ Pausar';
-        btn.setAttribute('aria-pressed', 'true');
-        btn.setAttribute('aria-label', 'Pausar música');
-      } catch (e) {
-        console.warn('No se pudo reproducir audio:', e);
-        btn.textContent = '⚠️ Tocar de nuevo';
-      }
-    } else {
-      audio.pause();
-      btn.textContent = '🎵 Música';
-      btn.setAttribute('aria-pressed', 'false');
-      btn.setAttribute('aria-label', 'Reproducir música');
-    }
-  });
-
+  // Al terminar, no hacemos nada más (no loop, no botón)
   audio.addEventListener('ended', () => {
-    btn.textContent = '🎵 Música';
-    btn.setAttribute('aria-pressed', 'false');
-    btn.setAttribute('aria-label', 'Reproducir música');
+    // Queda en silencio y no vuelve a reproducir
   });
 </script>
 </body>
