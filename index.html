@@ -2,13 +2,12 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Karen ❤️</title>
 
 <!-- Preload de la imagen de fondo -->
-<link.jpg
-
-<style>
+<link rel="preload" as="image" href="photo.jpg"======== */
   :root{
     --bg-url: url('photo.jpg');
     --txt-color: #ffffff;
@@ -23,6 +22,7 @@
     --safe-gap: clamp(16px, 6vh, 40px);
   }
 
+  /* ========== RESETS ========== */
   * { box-sizing: border-box; }
   html, body {
     height: 100%;
@@ -33,18 +33,17 @@
     overflow: hidden;
   }
 
-  /* Escenario a pantalla completa con perspectiva 3D */
+  /* ========== ESCENARIO ========== */
   .stage {
     position: relative;
     width: 100%;
-    height: 100vh;        /* Fallback universal */
-    height: 100dvh;       /* Usado si el navegador lo soporta */
+    height: 100vh;        /* fallback universal */
+    height: 100dvh;       /* si el navegador lo soporta */
     perspective: 1000px;
     overflow: hidden;
     isolation: isolate;
   }
 
-  /* Fondo con overlay para legibilidad */
   .bg {
     position: absolute;
     inset: 0;
@@ -52,10 +51,9 @@
       linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.55)),
       var(--bg-url) center/cover no-repeat fixed;
     z-index: 1;
-    will-change: transform;
   }
 
-  /* Texto superior */
+  /* ========== TEXTOS ========== */
   #title {
     position: absolute;
     top: calc(var(--safe-gap) + env(safe-area-inset-top, 0px));
@@ -69,7 +67,6 @@
     z-index: 50;
   }
 
-  /* Texto inferior */
   #bottomText {
     position: absolute;
     bottom: calc(var(--safe-gap) + env(safe-area-inset-bottom, 0px));
@@ -81,28 +78,27 @@
     line-height: 1.25;
     text-shadow: 0 0 10px var(--glow);
     z-index: 50;
-    pointer-events: none; /* deja pasar el toque al control si se superponen */
+    pointer-events: none; /* deja pasar el toque al control si se superpone */
   }
 
-  /* Wrapper centrado: rosa + control debajo */
+  /* ========== ROSA CENTRADA ========== */
   #roseWrapper {
     position: absolute;
     inset: 0;
     display: flex;
-    align-items: center;     /* centro vertical */
-    justify-content: center; /* centro horizontal */
-    z-index: 40;             /* encima de pétalos, debajo de textos */
-    pointer-events: none;    /* el wrapper no captura eventos */
+    align-items: center;
+    justify-content: center;
+    z-index: 40;
+    pointer-events: none; /* el wrapper no captura eventos */
   }
   #centerStack {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 18px;               /* separación entre rosa y control */
-    pointer-events: auto;    /* aquí sí permitimos clics */
+    gap: 18px;
+    pointer-events: auto; /* aquí sí permitimos clics */
   }
 
-  /* Rosa animada */
   #rose {
     font-size: var(--rose-size);
     transform-style: preserve-3d;
@@ -122,12 +118,12 @@
     100% { transform: translateY(0) rotateY(360deg); }
   }
 
-  /* ========= PÉTALOS con animaciones separadas por capas ========= */
+  /* ========== PÉTALOS (capas separadas) ========== */
   .petal-track {
     position: absolute;
     top: -12vh;
     opacity: 0;
-    z-index: 30;
+    z-index: 30; /* detrás de la rosa */
     will-change: transform, opacity;
     animation: fall var(--fall-dur, 6s) linear var(--fall-delay, 0s) infinite;
   }
@@ -153,18 +149,17 @@
     50%      { transform: translateX(12px); }
   }
 
-  /* ====== Emoji ❤️ clickeable (debajo de la rosa) ====== */
+  /* ========== EMOJI ❤️ CLICKEABLE ========== */
   .emoji-wrapper {
     display: inline-flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px; /* espacio entre el emoji y el texto */
+    gap: 6px;
     text-align: center;
     user-select: none;
     touch-action: manipulation;
   }
 
-  /* Botón con el emoji: grande, accesible y con pulso suave */
   .emoji-btn {
     appearance: none;
     background: none;
@@ -178,7 +173,6 @@
     animation: emojiPulse 1.8s ease-in-out infinite;
   }
   .emoji-btn:active { transform: scale(0.96); animation: none; }
-
   @keyframes emojiPulse {
     0%, 100% { transform: scale(1); }
     50%      { transform: scale(1.06); }
@@ -191,7 +185,6 @@
     opacity: 0.95;
   }
 
-  /* Estado deshabilitado tras reproducir */
   .emoji-wrapper[aria-disabled="true"] .emoji-btn {
     cursor: default;
     animation: none;
@@ -230,7 +223,6 @@
     <div id="bottomText">Te quiero ver cada minuto</div>
   </div>
 
-<!-- ====== SCRIPTS ====== -->
 <script>
   // ========= Parámetros de pétalos =========
   const isMobile = window.matchMedia('(max-width: 768px)').matches;
@@ -242,21 +234,21 @@
 
   const stage = document.querySelector('.stage');
 
-  // Generar estructura anidada: track (caída) -> sway (deriva) -> petal (visual)
+  // Generar: track (caída) -> sway (deriva) -> petal (visual)
   for (let i = 0; i < PETAL_COUNT; i++) {
     const track = document.createElement('div');
     track.className = 'petal-track';
     track.style.left = (Math.random() * 100).toFixed(2) + 'vw';
     track.style.setProperty('--fall-delay', (Math.random() * 4).toFixed(2) + 's');
-    track.style.setProperty('--fall-dur', (DUR_MIN + Math.random() * (DUR_MAX - DUR_MIN)).toFixed(2) + 's');
+    track.style.setProperty('--fall-dur', (5 + Math.random() * 3).toFixed(2) + 's');
 
     const sway = document.createElement('div');
     sway.className = 'petal-sway';
-    sway.style.setProperty('--sway-dur', (SWAY_MIN + Math.random() * (SWAY_MAX - SWAY_MIN)).toFixed(2) + 's');
+    sway.style.setProperty('--sway-dur', (3 + Math.random() * 2).toFixed(2) + 's');
 
     const petal = document.createElement('div');
     petal.className = 'petal';
-    petal.style.setProperty('--rot', (ROT_START[0] + Math.random() * (ROT_START[1] - ROT_START[0])).toFixed(1) + 'deg');
+    petal.style.setProperty('--rot', (-25 + Math.random() * 50).toFixed(1) + 'deg');
 
     sway.appendChild(petal);
     track.appendChild(sway);
@@ -286,10 +278,8 @@
       hasPlayed = true;
       emojiWrapper.setAttribute('aria-disabled', 'true');
       emojiBtn.setAttribute('aria-label', 'Reproduciendo música');
-      // Si prefieres, cambia el texto:
-      // emojiCaption.textContent = 'Gracias ❤️';
+      // emojiCaption.textContent = 'Gracias ❤️'; // opcional
     } catch (e) {
-      // Si falla (autoplay policy), sugerimos intentar de nuevo
       emojiCaption.textContent = '(tap again)';
       console.warn('No se pudo reproducir audio:', e);
     }
