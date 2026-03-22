@@ -81,6 +81,7 @@ photo.jpg
     line-height: 1.25;
     text-shadow: 0 0 10px var(--glow);
     z-index: 50;
+    pointer-events: none; /* deja pasar el toque al corazón si se superponen */
   }
 
   /* Wrapper que garantiza el centrado de la rosa (evita conflictos de transform) */
@@ -157,6 +158,72 @@ photo.jpg
     50%      { transform: translateX(12px); }
   }
 
+  /* ====== Botón corazón para música (parte inferior) ====== */
+  .heart-music {
+    position: absolute;
+    left: 50%;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    z-index: 60;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,.4);
+    user-select: none;
+    touch-action: manipulation;
+  }
+
+  .heart-btn {
+    width: 56px;
+    height: 50px;
+    background: #ff335f;
+    position: relative;
+    border: none;
+    cursor: pointer;
+    outline: none;
+    transform: rotate(-45deg);
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 6px 14px rgba(255, 51, 95, 0.45), 0 2px 4px rgba(0,0,0,0.25);
+    transition: transform .1s ease, filter .2s ease, box-shadow .2s ease;
+  }
+
+  /* Lóbulos del corazón (pseudo-elementos) */
+  .heart-btn::before,
+  .heart-btn::after {
+    content: "";
+    position: absolute;
+    width: 56px;
+    height: 56px;
+    background: #ff335f;
+    border-radius: 50%;
+    box-shadow: inherit;
+  }
+  .heart-btn::before { top: -28px; left: 0; }  /* lóbulo superior izquierdo */
+  .heart-btn::after  { left: 28px; top: 0; }   /* lóbulo superior derecho */
+
+  /* Pulsito suave */
+  @keyframes pulse {
+    0%, 100% { transform: rotate(-45deg) scale(1); filter: brightness(1); }
+    50%      { transform: rotate(-45deg) scale(1.06); filter: brightness(1.08); }
+  }
+  .heart-btn { animation: pulse 1.6s ease-in-out infinite; }
+
+  .heart-label {
+    font-size: clamp(14px, 3.6vw, 16px);
+    opacity: 0.9;
+  }
+
+  .heart-wrapper[aria-disabled="true"] .heart-btn {
+    cursor: default;
+    animation: none;
+    filter: grayscale(0.1) brightness(0.9);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  }
+  .heart-wrapper[aria-disabled="true"] .heart-label {
+    opacity: 0.7;
+  }
+
   /* Opcional: Ajuste en landscape (puedes comentar si no lo quieres) */
   @media (orientation: landscape) {
     :root { --rose-size: clamp(96px, 18vw, 220px); }
@@ -164,7 +231,7 @@ photo.jpg
 
   /* Accesibilidad: si quieres respetar "Reducir movimiento", descomenta:
   @media (prefers-reduced-motion: reduce) {
-    #rose, .petal-track, .petal-sway { animation: none !important; }
+    #rose, .petal-track, .petal-sway, .heart-btn { animation: none !important; }
   }
   */
 </style>
@@ -182,6 +249,12 @@ photo.jpg
     </div>
 
     <div id="bottomText">Te quiero ver cada minuto</div>
+
+    <!-- ===== Botón corazón (música) en la parte inferior ===== -->
+    <div id="heartWrapper" class="heart-wrapper heart-music" role="group" aria-label="Control de música" aria-disabled="false">
+      <button id="heartBtn" class="heart-btn" aria-label="Reproducir música"></button>
+      <span id="heartLabel" class="heart-label">(click me)</span>
+    </div>
   </div>
 
 <!-- ====== SCRIPTS ====== -->
@@ -217,39 +290,39 @@ photo.jpg
     stage.appendChild(track);
   }
 
-  // ========= Música: sin botón, reproducir UNA sola vez =========
+  // ========= Música: play UNA sola vez al tocar el corazón =========
   // Coloca 'music.mp3' junto a este HTML (o cambia la ruta).
   const audio = new Audio('music.mp3');
-  audio.loop = false;          // Reproducir solo una vez
+  audio.loop = false;          // Una sola reproducción
   audio.preload = 'auto';
 
-  // Intento de autoplay al cargar
-  const tryAutoplay = () => {
-    audio.play().catch(() => {
-      // Si el navegador bloquea autoplay con sonido:
-      // Reproducimos en el primer gesto del usuario (tap/click)
-      const onFirstUserGesture = () => {
-        audio.play().finally(() => {
-          window.removeEventListener('pointerdown', onFirstUserGesture, { passive: true });
-          window.removeEventListener('touchstart', onFirstUserGesture, { passive: true });
-          window.removeEventListener('click', onFirstUserGesture, { passive: true });
-        });
-      };
-      window.addEventListener('pointerdown', onFirstUserGesture, { passive: true });
-      window.addEventListener('touchstart', onFirstUserGesture, { passive: true });
-      window.addEventListener('click', onFirstUserGesture, { passive: true });
-    });
+  const heartWrapper = document.getElementById('heartWrapper');
+  const heartBtn = document.getElementById('heartBtn');
+  const heartLabel = document.getElementById('heartLabel');
+
+  let hasPlayed = false;
+
+  const playOnce = async () => {
+    if (hasPlayed) return;
+    try {
+      await audio.play();
+      hasPlayed = true;
+      heartWrapper.setAttribute('aria-disabled', 'true');
+      heartBtn.setAttribute('aria-label', 'Reproduciendo música');
+      heartLabel.textContent = 'Reproduciendo…';
+    } catch (e) {
+      // Si falla (p. ej., restricción del navegador), sugerimos intentar de nuevo
+      heartLabel.textContent = 'Toca de nuevo';
+      console.warn('No se pudo reproducir audio:', e);
+    }
   };
 
-  if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    tryAutoplay();
-  } else {
-    window.addEventListener('DOMContentLoaded', tryAutoplay);
-  }
+  heartBtn.addEventListener('click', playOnce, { passive: true });
 
-  // Al terminar, no hacemos nada más (no loop, no botón)
+  // Cuando termina el audio, dejamos el botón desactivado (no vuelve a sonar).
   audio.addEventListener('ended', () => {
-    // Queda en silencio y no vuelve a reproducir
+    heartWrapper.setAttribute('aria-disabled', 'true');
+    heartLabel.textContent = 'Gracias ❤️';
   });
 </script>
 </body>
