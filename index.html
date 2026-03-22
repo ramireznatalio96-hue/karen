@@ -81,7 +81,7 @@ photo.jpg
     line-height: 1.25;
     text-shadow: 0 0 10px var(--glow);
     z-index: 50;
-    pointer-events: none; /* deja pasar el toque al corazón si se superponen */
+    pointer-events: none; /* deja pasar el toque al control si se superponen */
   }
 
   /* Wrapper que garantiza el centrado de la rosa (evita conflictos de transform) */
@@ -92,7 +92,16 @@ photo.jpg
     align-items: center;     /* centro vertical */
     justify-content: center; /* centro horizontal */
     z-index: 40;             /* encima de pétalos, debajo de textos */
-    pointer-events: none;
+    pointer-events: none;    /* el wrapper no captura eventos */
+  }
+
+  /* Pila vertical centrada: rosa arriba, corazón debajo */
+  #centerStack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;               /* separación entre rosa y botón corazón */
+    pointer-events: auto;    /* aquí sí permitimos clics */
   }
 
   /* Rosa animada (NO usa top/left; solo animación) */
@@ -158,13 +167,8 @@ photo.jpg
     50%      { transform: translateX(12px); }
   }
 
-  /* ====== Botón corazón para música (parte inferior) ====== */
-  .heart-music {
-    position: absolute;
-    left: 50%;
-    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-    transform: translateX(-50%);
-    z-index: 60;
+  /* ====== Botón corazón (debajo de la rosa) ====== */
+  .heart-wrapper {
     display: inline-flex;
     align-items: center;
     gap: 10px;
@@ -186,6 +190,7 @@ photo.jpg
     border-radius: 12px 12px 0 0;
     box-shadow: 0 6px 14px rgba(255, 51, 95, 0.45), 0 2px 4px rgba(0,0,0,0.25);
     transition: transform .1s ease, filter .2s ease, box-shadow .2s ease;
+    animation: pulse 1.6s ease-in-out infinite;
   }
 
   /* Lóbulos del corazón (pseudo-elementos) */
@@ -207,13 +212,14 @@ photo.jpg
     0%, 100% { transform: rotate(-45deg) scale(1); filter: brightness(1); }
     50%      { transform: rotate(-45deg) scale(1.06); filter: brightness(1.08); }
   }
-  .heart-btn { animation: pulse 1.6s ease-in-out infinite; }
 
+  /* Etiqueta ahora es solo un corazón emoji */
   .heart-label {
-    font-size: clamp(14px, 3.6vw, 16px);
-    opacity: 0.9;
+    font-size: clamp(16px, 4vw, 18px);
+    opacity: 0.95;
   }
 
+  /* Estado deshabilitado después de reproducir */
   .heart-wrapper[aria-disabled="true"] .heart-btn {
     cursor: default;
     animation: none;
@@ -224,7 +230,7 @@ photo.jpg
     opacity: 0.7;
   }
 
-  /* Opcional: Ajuste en landscape (puedes comentar si no lo quieres) */
+  /* Opcional: Ajuste en landscape */
   @media (orientation: landscape) {
     :root { --rose-size: clamp(96px, 18vw, 220px); }
   }
@@ -243,18 +249,20 @@ photo.jpg
 
     <h1 id="title">Karen, te quiero mucho</h1>
 
-    <!-- Rosa centrada por wrapper flex -->
-    <div id="roseWrapper" aria-hidden="true">
-      <div id="rose">🌹</div>
+    <!-- Rosa centrada y control de música debajo -->
+    <div id="roseWrapper">
+      <div id="centerStack">
+        <div id="rose">🌹</div>
+
+        <!-- Botón corazón (debajo de la rosa) -->
+        <div id="heartWrapper" class="heart-wrapper" role="group" aria-label="Control de música" aria-disabled="false">
+          <button id="heartBtn" class="heart-btn" aria-label="Reproducir música"></button>
+          <span id="heartLabel" class="heart-label">❤️</span>
+        </div>
+      </div>
     </div>
 
     <div id="bottomText">Te quiero ver cada minuto</div>
-
-    <!-- ===== Botón corazón (música) en la parte inferior ===== -->
-    <div id="heartWrapper" class="heart-wrapper heart-music" role="group" aria-label="Control de música" aria-disabled="false">
-      <button id="heartBtn" class="heart-btn" aria-label="Reproducir música"></button>
-      <span id="heartLabel" class="heart-label">(click me)</span>
-    </div>
   </div>
 
 <!-- ====== SCRIPTS ====== -->
@@ -309,21 +317,23 @@ photo.jpg
       hasPlayed = true;
       heartWrapper.setAttribute('aria-disabled', 'true');
       heartBtn.setAttribute('aria-label', 'Reproduciendo música');
-      heartLabel.textContent = 'Reproduciendo…';
+      // Mantener el corazón como ❤️; si prefieres, puedes cambiar a "Gracias ❤️"
+      // heartLabel.textContent = 'Gracias ❤️';
     } catch (e) {
       // Si falla (p. ej., restricción del navegador), sugerimos intentar de nuevo
-      heartLabel.textContent = 'Toca de nuevo';
+      heartLabel.textContent = '❤️ Toca de nuevo';
       console.warn('No se pudo reproducir audio:', e);
     }
   };
 
   heartBtn.addEventListener('click', playOnce, { passive: true });
 
-  // Cuando termina el audio, dejamos el botón desactivado (no vuelve a sonar).
+  // Cuando termina el audio, no vuelve a sonar; puedes mostrar un "Gracias ❤️" si quieres.
   audio.addEventListener('ended', () => {
     heartWrapper.setAttribute('aria-disabled', 'true');
-    heartLabel.textContent = 'Gracias ❤️';
+    // heartLabel.textContent = 'Gracias ❤️';
   });
 </script>
 </body>
 </html>
+``
